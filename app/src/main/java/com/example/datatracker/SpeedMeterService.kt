@@ -59,11 +59,11 @@ class SpeedMeterService : Service() {
 
         val speedValue: String
         val speedUnit: String
-        if (totalSpeedBytes >= 1024 * 1024) {
-            speedValue = String.format(Locale.US, "%.1f", totalSpeedBytes / (1024.0 * 1024.0))
+        if (totalSpeedBytes >= 1000 * 1000) {
+            speedValue = String.format(Locale.US, "%.1f", totalSpeedBytes / (1000.0 * 1000.0))
             speedUnit = "MB/s"
         } else {
-            speedValue = (totalSpeedBytes / 1024).toString()
+            speedValue = (totalSpeedBytes / 1000).toString()
             speedUnit = "KB/s"
         }
 
@@ -77,7 +77,7 @@ class SpeedMeterService : Service() {
         notificationManager.notify(1, buildSpeedNotification(speedValue, speedUnit, todayMB, monthlyMB))
 
         val prefs = getSharedPreferences("DataTrackerPrefs", Context.MODE_PRIVATE)
-        val dailyLimitMB = prefs.getFloat("DAILY_LIMIT_MB", 1024f)
+        val dailyLimitMB = prefs.getFloat("DAILY_LIMIT_MB", 1000f)
 
         if (todayMB >= dailyLimitMB && !alertTriggeredToday) {
             sendDataAlertNotification(todayMB, dailyLimitMB)
@@ -92,7 +92,7 @@ class SpeedMeterService : Service() {
         val iconCompat = IconCompat.createWithBitmap(iconBitmap)
 
         val todayFormatted = String.format(Locale.US, "%.1f MB", todayMB)
-        val monthlyFormatted = String.format(Locale.US, "%.2f GB", monthlyMB / 1024.0)
+        val monthlyFormatted = String.format(Locale.US, "%.2f GB", monthlyMB / 1000.0)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(iconCompat)
