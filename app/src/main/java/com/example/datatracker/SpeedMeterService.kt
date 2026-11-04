@@ -50,8 +50,8 @@ class SpeedMeterService : Service() {
         val currentRxBytes = TrafficStats.getTotalRxBytes()
         val currentTxBytes = TrafficStats.getTotalTxBytes()
 
-        val rxSpeed = currentRxBytes - lastRxBytes
-        val txSpeed = currentTxBytes - lastTxBytes
+        val rxSpeed = maxOf(0L, currentRxBytes - lastRxBytes)
+        val txSpeed = maxOf(0L, currentTxBytes - lastTxBytes)
         val totalSpeedBytes = rxSpeed + txSpeed
 
         lastRxBytes = currentRxBytes
@@ -68,6 +68,8 @@ class SpeedMeterService : Service() {
         }
 
         val usageHelper = DataUsageHelper(this)
+        usageHelper.recordLiveMobileBytes(totalSpeedBytes)
+
         val todayMB = usageHelper.getTodayMobileDataMB()
         val monthlyMB = usageHelper.getMonthlyMobileDataMB()
 
