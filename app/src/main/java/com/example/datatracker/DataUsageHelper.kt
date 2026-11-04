@@ -4,7 +4,6 @@ import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.TrafficStats
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -27,15 +26,14 @@ class DataUsageHelper(private val context: Context) {
     private fun checkAndResetDailyCounter() {
         val todayStr = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
         val savedDate = prefs.getString("LAST_DATE", "")
-        
+        val sysBytes = querySystemBytes(getStartOfDayMillis(), System.currentTimeMillis())
+
         if (savedDate != todayStr) {
-            val sysBytes = querySystemBytes(getStartOfDayMillis(), System.currentTimeMillis())
             prefs.edit()
                 .putString("LAST_DATE", todayStr)
                 .putLong("LIVE_TODAY_BYTES", sysBytes)
                 .apply()
         } else {
-            val sysBytes = querySystemBytes(getStartOfDayMillis(), System.currentTimeMillis())
             val currentLive = prefs.getLong("LIVE_TODAY_BYTES", 0L)
             if (sysBytes > currentLive) {
                 prefs.edit().putLong("LIVE_TODAY_BYTES", sysBytes).apply()
@@ -77,7 +75,7 @@ class DataUsageHelper(private val context: Context) {
     }
 
     private fun querySystemBytes(startTime: Long, endTime: Long): Long {
-        var total = 0L
+        var deviceTotal = 0L
         try {
             val summaryBucket = networkStatsManager.querySummaryForDevice(
                 ConnectivityManager.TYPE_MOBILE,
@@ -85,29 +83,11 @@ class DataUsageHelper(private val context: Context) {
                 startTime,
                 endTime
             )
-            total = summaryBucket.rxBytes + summaryBucket.txBytes
-
-            val stats = networkStatsManager.querySummary(
-                ConnectivityManager.TYPE_MOBILE,
-                null,
-                startTime,
-                endTime
-            )
-            var bucketSum = 0L
-            val bucket = NetworkStats.Bucket()
-            while (stats.hasNextBucket()) {
-                stats.getNextBucket(bucket)
-                bucketSum += (bucket.rxBytes + bucket.txBytes)
-            }
-            stats.close()
-
-            if (bucketSum > total) {
-                total = bucketSum
-            }
+            deviceTotal = summaryBucket.rxBytes + summaryBucket.txBytes
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return total
+        return deviceTotal
     }
 
     private fun isMobileDataActive(): Boolean {
@@ -120,7 +100,8 @@ class DataUsageHelper(private val context: Context) {
         }
     }
 
+    // Android Settings ebong Telecom Operator-der moto 1000-based (Decimal) MB hiseb
     private fun bytesToMB(bytes: Long): Double {
-        return bytes / (1024.0 * 1024.0)
+        return bytes / (1000.0 * 1000.0)
     }
 }
